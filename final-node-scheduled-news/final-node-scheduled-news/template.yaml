@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  node-schedule-news-test
+
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+  Function:
+    MemorySize: 128
+    Timeout: 100
+    Environment:
+      Variables:
+        SNS_TOPIC_ARN: arn:aws:sns:region:account_id:Happy-News
+        DYNAMODB_TABLE: !Ref Table
+        REGION_NAME: !Ref Region
+        APIKEY: "add_your_api_ley" #go to api https://newsapi.org/
+Parameters:
+  Table:
+    Type: String
+    Default: News
+  Topic:
+    Type: String
+    Default: Happy-News
+  Region:
+    Type: String
+    Default: us-west-2
+    
+Resources: 
+  
+  FetchNewsEvent:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: FetchNews.
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      Handler: src/handlers/getNews.getNews
+      Policies: 
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Table
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+              - comprehend:*
+              Resource: '*'
+      Events:
+        GetNews:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /news
+            Method: get
+ 
+  SendEmailEvent:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: A Lambda function that sends only good news to a subscribed user SNS.
+      Runtime: nodejs16.x
+      Architectures:
+        - x86_64
+      Handler: src/handlers/app.scheduledEventLoggerHandler
+      Policies: 
+        - SNSCrudPolicy:
+            TopicName: !Ref Topic
+        
+      # This property associates this Lambda function with a scheduled CloudWatch Event. For all available properties, see
+      # https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#schedule
+      # This example runs every 24 hrs at 8am.
+      Events:
+        CloudWatchEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(0 15 * * ? *) #rate(10 minutes) #cron(0 15 * * ? *) #rate(2 minutes) #cron(0 * * * ? *)
+  
+  #SNS
+  NewsTopic:
+    Type: 'AWS::SNS::Topic'
+    Properties:
+      TopicName: !Ref Topic
+  NewsSubscription:
+    Type: 'AWS::SNS::Subscription'
+    Properties:
+      TopicArn: !Ref NewsTopic
+      Endpoint: your_email_address #important!!!
+      Protocol: email
+      DeliveryPolicy:
+        healthyRetryPolicy:
+          numRetries: 20
+          minDelayTarget: 10
+          maxDelayTarget: 30
+          numMinDelayRetries: 3
+          numMaxDelayRetries: 17
+          numNoDelayRetries: 0
+          backoffFunction: exponential   
+
+  NewsTable:
+       Type: AWS::DynamoDB::Table
+       Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: !Ref Table
+      

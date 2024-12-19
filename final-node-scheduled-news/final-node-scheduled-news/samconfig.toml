@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "final-news-schedule-sentiment"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-japm0ytgb3is"
+s3_prefix = "final-news-schedule-sentiment"
+region = "us-west-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Table=\"News\" Topic=\"Happy-News\" Region=\"us-west-2\""
+image_repositories = []

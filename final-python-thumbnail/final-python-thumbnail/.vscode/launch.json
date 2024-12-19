@@ -1,0 +1,33 @@
+{
+    "configurations": [
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "final-python-thumbnail:CreateThumbnailFunction",
+            "invokeTarget": {
+                "target": "template",
+                "templatePath": "${workspaceFolder}/template.yaml",
+                "logicalId": "CreateThumbnailFunction"
+            },
+            "lambda": {
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "handler:app.new_filename (python3.8)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/handler",
+                "lambdaHandler": "app.new_filename"
+            },
+            "lambda": {
+                "runtime": "python3.8",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        }
+    ]
+}
